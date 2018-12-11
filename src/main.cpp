@@ -85,16 +85,20 @@ size_t puzzle3(fstream &input) {
 }
 size_t puzzle4(fstream &input) {
     size_t result = 0;
-    map<time_t, string> chronoLog;
+    struct info {
+        string text;
+        tm time;
+    };
+    map<string, info> chronoLog;
     while (!input.eof()) {
         string line;
         getline(input, line);
         const auto br = line.find("] ");
-        istringstream time(line.substr(1, br - 1));
-        tm l = {0};
-        time >> get_time(&l, "%Y-%m-%d %H:%M");
-        auto t = mktime(&l);
-        chronoLog[t] = line.substr(br + 2);
+        const auto time = line.substr(1, br - 1);
+        struct tm l = {0};
+        l.tm_isdst = -1;
+        istringstream(time) >> get_time(&l, "%Y-%m-%d %H:%M");
+        chronoLog[time] = {line.substr(br + 2), l};
     }
     return result;
 }
