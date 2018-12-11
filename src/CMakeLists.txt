@@ -3,7 +3,8 @@ set(project_name adventofcode)
 ############### Files #################
 
 set (SOURCES main.cpp)
-set (HEADERS main.cpp)
+set (HEADERS )
+set (RESOURCES resources/input.txt)
 
 #######################################
 
@@ -11,6 +12,7 @@ set (HEADERS main.cpp)
 ########### Group Sources #############
 
 source_group("Source" FILES ${SOURCES} ${HEADERS})
+source_group("Resources" FILES ${RESOURCES})
 
 #######################################
 
@@ -25,7 +27,7 @@ include_directories (src)
 
 ######### Config Executable ###########
 
-add_executable(${project_name} ${SOURCES} ${HEADERS})
+add_executable(${project_name} ${SOURCES} ${HEADERS} ${RESOURCES})
 
 #######################################
 
