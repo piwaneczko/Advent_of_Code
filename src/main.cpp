@@ -69,6 +69,16 @@ size_t puzzle3(fstream &input) {
         }
     }
 
+    for (auto &it : rects) {
+        auto nooverlap = true;
+        for (size_t x = it.second.x; nooverlap && x < (it.second.x + it.second.width); x++) {
+            for (size_t y = it.second.y; nooverlap && y < (it.second.y + it.second.height); y++) {
+                if (mat[x][y] != 1) nooverlap = false;
+            }
+        }
+        if (nooverlap) cout << "No overlap claim:" << it.first << endl;
+    }
+
     return squareMeters;
 }
 
