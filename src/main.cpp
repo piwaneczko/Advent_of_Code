@@ -1,6 +1,9 @@
+#include <time.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -38,7 +41,6 @@ size_t puzzle2(fstream &input) {
     }
     return twoCount * threeCount;
 }
-
 size_t puzzle3(fstream &input) {
     size_t squareMeters = 0;
     struct Rect {
@@ -81,13 +83,28 @@ size_t puzzle3(fstream &input) {
 
     return squareMeters;
 }
+size_t puzzle4(fstream &input) {
+    size_t result = 0;
+    map<time_t, string> chronoLog;
+    while (!input.eof()) {
+        string line;
+        getline(input, line);
+        const auto br = line.find("] ");
+        istringstream time(line.substr(1, br - 1));
+        tm l = {0};
+        time >> get_time(&l, "%Y-%m-%d %H:%M");
+        auto t = mktime(&l);
+        chronoLog[t] = line.substr(br + 2);
+    }
+    return result;
+}
 
 int main(const int argc, char *argv[]) {
     if (argc > 1) {
         try {
             fstream input(argv[1]);
             if (input.is_open()) {
-                cout << "Answer:" << puzzle3(input) << endl;
+                cout << "Answer:" << puzzle4(input) << endl;
             }
         } catch (exception &e) {
             cout << e.what() << endl;
