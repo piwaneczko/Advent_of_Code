@@ -1,9 +1,6 @@
-#include <time.h>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -84,23 +81,78 @@ size_t puzzle3(fstream &input) {
     return squareMeters;
 }
 size_t puzzle4(fstream &input) {
-    size_t result = 0;
-    struct info {
+    struct Info {
         string text;
-        tm time;
+        int min;
     };
-    map<string, info> chronoLog;
+    struct GuardsNaps {
+        vector<pair<int, int>> naps;
+        size_t minutesCount = 0;
+    };
+    map<string, Info> chronoLog;
+    int year, month, day, hour, min;
     while (!input.eof()) {
         string line;
         getline(input, line);
         const auto br = line.find("] ");
         const auto time = line.substr(1, br - 1);
-        struct tm l = {0};
-        l.tm_isdst = -1;
-        istringstream(time) >> get_time(&l, "%Y-%m-%d %H:%M");
-        chronoLog[time] = {line.substr(br + 2), l};
+        sscanf_s(time.c_str(), "%04d-%02d-%02d %02d:%02d", &year, &month, &day, &hour, &min);
+        chronoLog[time] = {line.substr(br + 2), min};
     }
-    return result;
+    map<int, GuardsNaps> guardsShifts;
+
+    auto id = 0;
+    for (auto &it : chronoLog) {
+        auto &info = it.second;
+        if (sscanf_s(info.text.c_str(), "Guard #%d begins shift", &id) == 1) {
+            if (guardsShifts.find(id) == guardsShifts.end()) guardsShifts[id] = GuardsNaps();
+        } else if (info.text == "falls asleep") {
+            guardsShifts[id].naps.emplace_back(make_pair(it.second.min, 0));
+        } else if (info.text == "wakes up") {
+            auto &nap = guardsShifts[id].naps.back();
+            nap.second = it.second.min;
+            guardsShifts[id].minutesCount += (nap.second - nap.first);
+        } else
+            throw exception("Parsing error!");
+    }
+    size_t longestNap = 0;
+    for (auto &it : guardsShifts) {
+        if (it.second.minutesCount > longestNap) {
+            longestNap = it.second.minutesCount;
+            id = it.first;
+        }
+    }
+    auto mostMinute = 0;
+    size_t mostMinuteCount = 0;
+    map<int, size_t> mostMinutes;
+    for (auto &nap : guardsShifts[id].naps) {
+        for (min = nap.first; min < nap.second; min++) {
+            mostMinutes[min]++;
+            if (mostMinutes[min] > mostMinuteCount) {
+                mostMinuteCount = mostMinutes[min];
+                mostMinute = min;
+            }
+        }
+    }
+    auto guardMostMinuteId = 0;
+    auto guardMostMinute = 0;
+    auto guardMostMinuteCount = 0;
+    for (auto &it : guardsShifts) {
+        mostMinutes.clear();
+        for (auto &nap : it.second.naps) {
+            for (min = nap.first; min < nap.second; min++) {
+                mostMinutes[min]++;
+                if (mostMinutes[min] > guardMostMinuteCount) {
+                    guardMostMinuteCount = mostMinutes[min];
+                    guardMostMinuteId = it.first;
+                    guardMostMinute = min;
+                }
+            }
+        }
+    }
+    cout << "Puzzle part two answer:" << guardMostMinuteId * guardMostMinute << endl;
+
+    return mostMinute * id;
 }
 
 int main(const int argc, char *argv[]) {
