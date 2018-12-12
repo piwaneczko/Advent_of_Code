@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -6,16 +7,16 @@
 
 using namespace std;
 
-size_t puzzle1(fstream &input) {
+void puzzle1(fstream &input) {
     size_t count = 0;
     while (!input.eof()) {
         string line;
         getline(input, line);
         count += stoi(line);
     }
-    return count;
+    cout << "Answer:" << count << endl;
 }
-size_t puzzle2(fstream &input) {
+void puzzle2(fstream &input) {
     size_t twoCount = 0, threeCount = 0;
     while (!input.eof()) {
         string line;
@@ -36,9 +37,10 @@ size_t puzzle2(fstream &input) {
             }
         }
     }
-    return twoCount * threeCount;
+
+    cout << "Answer:" << twoCount * threeCount << endl;
 }
-size_t puzzle3(fstream &input) {
+void puzzle3(fstream &input) {
     size_t squareMeters = 0;
     struct Rect {
         int x, y, width, height;
@@ -67,6 +69,7 @@ size_t puzzle3(fstream &input) {
             }
         }
     }
+    cout << "Answer:" << squareMeters << endl;
 
     for (auto &it : rects) {
         auto nooverlap = true;
@@ -77,10 +80,8 @@ size_t puzzle3(fstream &input) {
         }
         if (nooverlap) cout << "No overlap claim:" << it.first << endl;
     }
-
-    return squareMeters;
 }
-size_t puzzle4(fstream &input) {
+void puzzle4(fstream &input) {
     struct Info {
         string text;
         int min;
@@ -124,7 +125,7 @@ size_t puzzle4(fstream &input) {
     }
     auto mostMinute = 0;
     size_t mostMinuteCount = 0;
-    map<int, size_t> mostMinutes;
+    map<int, int> mostMinutes;
     for (auto &nap : guardsShifts[id].naps) {
         for (min = nap.first; min < nap.second; min++) {
             mostMinutes[min]++;
@@ -150,9 +151,48 @@ size_t puzzle4(fstream &input) {
             }
         }
     }
+    cout << "Puzzle part one answer:" << mostMinute * id << endl;
     cout << "Puzzle part two answer:" << guardMostMinuteId * guardMostMinute << endl;
+}
+void puzzle5(fstream &input) {
+    string polymer;
+    getline(input, polymer);
 
-    return mostMinute * id;
+    const auto polymerReaction = [](string polymer) {
+        size_t kr = 0;
+        auto it = polymer.begin();
+        auto nit = next(it);
+        while (nit != polymer.end()) {
+            if (abs(*it - *nit) == 32) {
+                polymer.replace(it, nit + 1, "");
+                if (kr > 0) --kr;
+                it = next(polymer.begin(), kr);
+            } else {
+                ++it;
+                ++kr;
+            }
+            nit = next(it);
+        }
+        return polymer.size();
+    };
+    cout << "Answer:" << polymerReaction(polymer) << endl;
+    const auto reducePolymer = [](string polymer, const char ch) {
+        auto pos = polymer.find(ch);
+        while (pos != string::npos) {
+            polymer.replace(pos, 1, "");
+            pos = polymer.find(ch, pos);
+        }
+        return polymer;
+    };
+
+    auto shortestPolymer = polymer.size();
+    for (auto ch = 'A'; ch <= 'Z'; ch++) {
+        const auto reductedPolymerLength = polymerReaction(reducePolymer(reducePolymer(polymer, ch), ch + 32));
+        if (shortestPolymer > reductedPolymerLength) {
+            shortestPolymer = reductedPolymerLength;
+        }
+    }
+    cout << "Shortest polymer length:" << shortestPolymer << endl;
 }
 
 int main(const int argc, char *argv[]) {
@@ -160,7 +200,7 @@ int main(const int argc, char *argv[]) {
         try {
             fstream input(argv[1]);
             if (input.is_open()) {
-                cout << "Answer:" << puzzle4(input) << endl;
+                puzzle5(input);
             }
         } catch (exception &e) {
             cout << e.what() << endl;
