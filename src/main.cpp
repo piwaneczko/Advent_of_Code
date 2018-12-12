@@ -199,7 +199,7 @@ void puzzle6(fstream &input) {
     struct Point {
         int x, y;
     };
-    vector<Point> points;
+    vector<Point> inputPoints;
     Point minPos{10000, 10000};
     Point maxPos{0, 0};
     while (!input.eof()) {
@@ -207,7 +207,7 @@ void puzzle6(fstream &input) {
         string line;
         getline(input, line);
         if (sscanf_s(line.c_str(), "%d, %d", &p.x, &p.y) == 2) {
-            points.emplace_back(p);
+            inputPoints.emplace_back(p);
             maxPos.x = max(maxPos.x, p.x);
             maxPos.y = max(maxPos.y, p.y);
             minPos.x = min(minPos.x, p.x);
@@ -215,15 +215,87 @@ void puzzle6(fstream &input) {
         } else
             throw exception("Parsing error!");
     }
-    const auto width = maxPos.x - minPos.x + 2;
-    const auto height = maxPos.y - minPos.y + 2;
+    minPos.x--;
+    minPos.y--;
+    maxPos.x++;
+    maxPos.y++;
+    const auto width = maxPos.x - minPos.x;
+    const auto height = maxPos.y - minPos.y;
     vector<vector<int>> area(width, vector<int>(height, -1));
 
-    for (auto i = 0; i < points.size(); i++) {
-        area[points[i].x - minPos.x + 1][points[i].y - minPos.y + 1] = i;
+    struct PointsArea {
+        vector<Point> points;
+        vector<Point> lastAdded;
+    };
+    map<int, PointsArea> pointsAreas;
+    for (auto i = 0; i < inputPoints.size(); i++) {
+        const auto &p = inputPoints[i];
+        const auto ap = Point{p.x - minPos.x, p.y - minPos.y};
+        area[ap.x][ap.y] = i;
+        pointsAreas[i].points.emplace_back(p);
+        pointsAreas[i].lastAdded.emplace_back(p);
+    }
+    const auto areaIsFilled = [&]() {
+        auto filled = true;
+        for (auto x = 0; x < width && filled; x++) {
+            for (auto y = 0; y < height && filled; y++) {
+                filled = area[x][y] != -1;
+            }
+        }
+        return filled;
+    };
+    while (!areaIsFilled()) {
+        for (auto &pa : pointsAreas) {
+            auto &lastAdded = pa.second.lastAdded;
+            if (lastAdded.size() > 0) {
+                vector<Point> added;
+                for (auto &p : lastAdded) {
+                    const auto ap = Point{p.x - minPos.x, p.y - minPos.y};
+                    if (ap.x > 0 && area[ap.x - 1][ap.y] == -1) {
+                        area[ap.x - 1][ap.y] = pa.first;
+                        added.emplace_back(Point{p.x - 1, p.y});
+                    }
+                    if (ap.x < (width - 1) && area[ap.x + 1][ap.y] == -1) {
+                        area[ap.x + 1][ap.y] = pa.first;
+                        added.emplace_back(Point{p.x + 1, p.y});
+                    }
+                    if (ap.y > 0 && area[ap.x][ap.y - 1] == -1) {
+                        area[ap.x][ap.y - 1] = pa.first;
+                        added.emplace_back(Point{p.x, p.y - 1});
+                    }
+                    if (ap.y < (height - 1) && area[ap.x][ap.y + 1] == -1) {
+                        area[ap.x][ap.y + 1] = pa.first;
+                        added.emplace_back(Point{p.x, p.y + 1});
+                    }
+                }
+                pa.second.points.insert(pa.second.points.end(), added.begin(), added.end());
+                lastAdded = added;
+            }
+        }
     }
 
-    cout << "Largest area" << 0 << endl;
+    vector<int> infiniteAreas;
+    const auto addAreaIfNotAdded = [&](int id) {
+        if (find(infiniteAreas.begin(), infiniteAreas.end(), id) == infiniteAreas.end()) {
+            infiniteAreas.emplace_back(id);
+        }
+    };
+    for (auto x = 0; x < width; x++) {
+        addAreaIfNotAdded(area[x][0]);
+        addAreaIfNotAdded(area[x][height - 1]);
+    }
+    for (auto y = 1; y < height - 1; y++) {
+        addAreaIfNotAdded(area[0][y]);
+        addAreaIfNotAdded(area[width - 1][y]);
+    }
+    auto longestArea = 0;
+    for (const auto &pa : pointsAreas) {
+        if (find(infiniteAreas.begin(), infiniteAreas.end(), pa.first) == infiniteAreas.end() && longestArea < pa.second.points.size()) {
+            longestArea = pa.second.points.size();
+        }
+    }
+
+    cout << "Largest area: " << longestArea << endl;
 }
 
 int main(const int argc, char *argv[]) {
