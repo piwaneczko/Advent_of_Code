@@ -195,12 +195,43 @@ void puzzle5(fstream &input) {
     cout << "Shortest polymer length:" << shortestPolymer << endl;
 }
 
+void puzzle6(fstream &input) {
+    struct Point {
+        int x, y;
+    };
+    vector<Point> points;
+    Point minPos{10000, 10000};
+    Point maxPos{0, 0};
+    while (!input.eof()) {
+        Point p;
+        string line;
+        getline(input, line);
+        if (sscanf_s(line.c_str(), "%d, %d", &p.x, &p.y) == 2) {
+            points.emplace_back(p);
+            maxPos.x = max(maxPos.x, p.x);
+            maxPos.y = max(maxPos.y, p.y);
+            minPos.x = min(minPos.x, p.x);
+            minPos.y = min(minPos.y, p.y);
+        } else
+            throw exception("Parsing error!");
+    }
+    const auto width = maxPos.x - minPos.x + 2;
+    const auto height = maxPos.y - minPos.y + 2;
+    vector<vector<int>> area(width, vector<int>(height, -1));
+
+    for (auto i = 0; i < points.size(); i++) {
+        area[points[i].x - minPos.x + 1][points[i].y - minPos.y + 1] = i;
+    }
+
+    cout << "Largest area" << 0 << endl;
+}
+
 int main(const int argc, char *argv[]) {
     if (argc > 1) {
         try {
             fstream input(argv[1]);
             if (input.is_open()) {
-                puzzle5(input);
+                puzzle6(input);
             }
         } catch (exception &e) {
             cout << e.what() << endl;
