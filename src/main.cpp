@@ -200,27 +200,29 @@ void puzzle6(fstream &input) {
         int x, y;
     };
     vector<Point> inputPoints;
-    Point minPos{10000, 10000};
-    Point maxPos{0, 0};
+    auto areaLeft = 10000;
+    auto areaTop = 10000;
+    auto areaRight = 0;
+    auto areaBottom = 0;
     while (!input.eof()) {
         Point p;
         string line;
         getline(input, line);
         if (sscanf_s(line.c_str(), "%d, %d", &p.x, &p.y) == 2) {
             inputPoints.emplace_back(p);
-            maxPos.x = max(maxPos.x, p.x);
-            maxPos.y = max(maxPos.y, p.y);
-            minPos.x = min(minPos.x, p.x);
-            minPos.y = min(minPos.y, p.y);
+            areaRight = max(areaRight, p.x);
+            areaBottom = max(areaBottom, p.y);
+            areaLeft = min(areaLeft, p.x);
+            areaTop = min(areaTop, p.y);
         } else
             throw exception("Parsing error!");
     }
-    minPos.x--;
-    minPos.y--;
-    maxPos.x++;
-    maxPos.y++;
-    const auto width = maxPos.x - minPos.x;
-    const auto height = maxPos.y - minPos.y;
+    areaLeft--;
+    areaTop--;
+    areaRight++;
+    areaBottom++;
+    const auto width = areaRight - areaLeft;
+    const auto height = areaBottom - areaTop;
     vector<vector<int>> area(width, vector<int>(height, -1));
 
     struct PointsArea {
@@ -230,7 +232,7 @@ void puzzle6(fstream &input) {
     map<int, PointsArea> pointsAreas;
     for (auto i = 0; i < inputPoints.size(); i++) {
         const auto &p = inputPoints[i];
-        const auto ap = Point{p.x - minPos.x, p.y - minPos.y};
+        const auto ap = Point{p.x - areaLeft, p.y - areaTop};
         area[ap.x][ap.y] = i;
         pointsAreas[i].points.emplace_back(p);
         pointsAreas[i].lastAdded.emplace_back(p);
@@ -250,7 +252,7 @@ void puzzle6(fstream &input) {
             if (lastAdded.size() > 0) {
                 vector<Point> added;
                 for (auto &p : lastAdded) {
-                    const auto ap = Point{p.x - minPos.x, p.y - minPos.y};
+                    const auto ap = Point{p.x - areaLeft, p.y - areaTop};
                     if (ap.x > 0 && area[ap.x - 1][ap.y] == -1) {
                         area[ap.x - 1][ap.y] = pa.first;
                         added.emplace_back(Point{p.x - 1, p.y});
@@ -288,7 +290,7 @@ void puzzle6(fstream &input) {
         addAreaIfNotAdded(area[0][y]);
         addAreaIfNotAdded(area[width - 1][y]);
     }
-    auto longestArea = 0;
+    size_t longestArea = 0;
     for (const auto &pa : pointsAreas) {
         if (find(infiniteAreas.begin(), infiniteAreas.end(), pa.first) == infiniteAreas.end() && longestArea < pa.second.points.size()) {
             longestArea = pa.second.points.size();
@@ -296,6 +298,19 @@ void puzzle6(fstream &input) {
     }
 
     cout << "Largest area: " << longestArea << endl;
+
+    size_t regionSize = 0;
+    for (auto x = areaLeft; x < areaRight; x++) {
+        for (auto y = areaTop; y < areaBottom; y++) {
+            auto totalDistance = 0;
+            for (auto &p : inputPoints) {
+                totalDistance += abs(x - p.x) + abs(y - p.y);
+            }
+            if (totalDistance < 10000) regionSize++;
+        }
+    }
+
+    cout << "Region size(less than 10000): " << regionSize << endl;
 }
 
 int main(const int argc, char *argv[]) {
