@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <string>
@@ -313,12 +314,73 @@ void puzzle6(fstream &input) {
     cout << "Region size(less than 10000): " << regionSize << endl;
 }
 
+void puzzle7(fstream &input) {
+    string order;
+    map<char, vector<char>> parentsTree;
+    map<char, vector<char>> childTree;
+    while (!input.eof()) {
+        string line;
+        getline(input, line);
+        auto parent = line[5];
+        auto child = line[36];
+        parentsTree[child].emplace_back(parent);
+        childTree[parent].emplace_back(child);
+        if (order.find(parent) == string::npos) order += parent;
+        if (order.find(child) == string::npos) order += child;
+    }
+
+    function<bool(char, const vector<char> &)> foundParent;
+    foundParent = [&](char ch, const vector<char> &parents) {
+        auto founded = find(parents.begin(), parents.end(), ch) != parents.end();
+        if (!founded) {
+            for (auto &it : parents) {
+                founded = foundParent(ch, parentsTree[it]);
+                if (founded) break;
+            }
+        }
+        return founded;
+    };
+    function<bool(char, const vector<char> &)> foundChild;
+    foundChild = [&](char ch, const vector<char> &childs) {
+        auto founded = find(childs.begin(), childs.end(), ch) != childs.end();
+        if (!founded) {
+            for (auto &it : childs) {
+                founded = foundChild(ch, childTree[it]);
+                if (founded) break;
+            }
+        }
+        return founded;
+    };
+    sort(order.begin(), order.end(), [&](char lch, char rch) {
+        const auto sizeEqual = parentsTree[lch].size() == parentsTree[rch].size();
+        auto res = foundChild(rch, childTree[lch]);
+        if (sizeEqual) {
+            res &= lch < rch;
+        } else {
+            res &= parentsTree[lch].size() < parentsTree[rch].size();
+        }
+        return res;
+        // return foundChild(rch, childTree[lch]);  // || (parentsTree[rch].size() == parentsTree[lch].size() && parentsTree[rch].size() <= 1 && lch <
+        // rch);
+    });
+
+    for (auto &ch : order) {
+        auto &parents = parentsTree[ch];
+        auto &childs = childTree[ch];
+        auto ptext = parents.empty() ? "" : string(static_cast<char *>(parents.data()), parents.size());
+        auto chtext = childs.empty() ? "" : string(static_cast<char *>(childs.data()), childs.size());
+        printf_s("%12s -> %c -> %8s\n", ptext.c_str(), ch, chtext.c_str());
+    }
+
+    cout << "Instructions order: " << order << endl;
+}
+
 int main(const int argc, char *argv[]) {
     if (argc > 1) {
         try {
             fstream input(argv[1]);
             if (input.is_open()) {
-                puzzle6(input);
+                puzzle7(input);
             }
         } catch (exception &e) {
             cout << e.what() << endl;
