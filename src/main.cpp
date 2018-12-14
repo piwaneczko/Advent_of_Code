@@ -315,7 +315,7 @@ void puzzle6(fstream &input) {
 }
 
 void puzzle7(fstream &input) {
-    string order;
+    string order, notAdded;
     struct CharTrees {
         string parents;
         string childs;
@@ -326,46 +326,34 @@ void puzzle7(fstream &input) {
         getline(input, line);
         auto parent = line[5];
         auto child = line[36];
-        treeMap[child].parents += parent;
-        treeMap[parent].childs += child;
-        if (order.find(parent) == string::npos) order += parent;
-        if (order.find(child) == string::npos) order += child;
+        if (treeMap[child].parents.find(parent) == string::npos) treeMap[child].parents += parent;
+        if (treeMap[parent].childs.find(child) == string::npos) treeMap[parent].childs += child;
+    }
+    for (auto &it : treeMap) {
+        sort(it.second.childs.begin(), it.second.childs.end());
+        sort(it.second.parents.begin(), it.second.parents.end());
+        if (it.second.parents.size() == 0) notAdded += it.first;
     }
 
-    function<bool(char, const string &)> foundParent;
-    foundParent = [&](char ch, const string &parents) {
-        auto founded = find(parents.begin(), parents.end(), ch) != parents.end();
-        if (!founded) {
-            for (auto &it : parents) {
-                founded = foundParent(ch, treeMap[it].parents);
-                if (founded) break;
-            }
+    auto i = 0;
+    const auto charAdded = [&](char ch) { return order.find(ch) != string::npos || notAdded.find(ch) != string::npos; };
+    while (!notAdded.empty()) {
+        sort(notAdded.begin(), notAdded.end());
+        i = 0;
+        while (i < notAdded.size()) {
+            auto &parents = treeMap[notAdded[i]].parents;
+            if (count_if(parents.begin(), parents.end(), [&order](char ch) { return order.find(ch) != string::npos; }) == parents.size()) break;
+            i++;
         }
-        return founded;
-    };
-    function<bool(char, const string &)> foundChild;
-    foundChild = [&](char ch, const string &childs) {
-        auto founded = find(childs.begin(), childs.end(), ch) != childs.end();
-        if (!founded) {
-            for (auto &it : childs) {
-                founded = foundChild(ch, treeMap[it].childs);
-                if (founded) break;
-            }
+        order += notAdded[i];
+        auto toReplace = treeMap[notAdded[i]].childs;
+        auto it = find_if(toReplace.begin(), toReplace.end(), charAdded);
+        while (it != toReplace.end()) {
+            toReplace.erase(it);
+            it = find_if(toReplace.begin(), toReplace.end(), charAdded);
         }
-        return founded;
-    };
-    sort(order.begin(), order.end(), [&](char lch, char rch) {
-        const auto sizeEqual = treeMap[lch].parents.size() == treeMap[rch].parents.size();
-        auto res = foundChild(rch, treeMap[lch].childs);
-        if (sizeEqual) {
-            res &= lch < rch;
-        } else {
-            res &= treeMap[lch].parents.size() < treeMap[rch].parents.size();
-        }
-        return res;
-        // return foundChild(rch, childTree[lch]);  // || (parentsTree[rch].size() == parentsTree[lch].size() && parentsTree[rch].size() <= 1 && lch <
-        // rch);
-    });
+        notAdded.replace(i, 1, toReplace);
+    }
 
     for (auto &ch : order) {
         auto &parents = treeMap[ch].parents;
