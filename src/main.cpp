@@ -362,6 +362,60 @@ void puzzle7(fstream &input) {
     }
 
     cout << "Instructions order: " << order << endl;
+
+    const auto charTime = [](char ch) { return 61 + ch - 'A'; };
+    notAdded = order;
+    order.clear();
+    vector<vector<pair<char, size_t>>> work;
+    while (!notAdded.empty()) {
+        sort(notAdded.begin(), notAdded.end());
+        i = 0;
+        vector<int> canBeAdded, added;
+        while (i < notAdded.size()) {
+            auto &parents = treeMap[notAdded[i]].parents;
+            if (count_if(parents.begin(), parents.end(), [&order](char ch) { return order.find(ch) != string::npos; }) == parents.size())
+                canBeAdded.emplace_back(i);
+            i++;
+        }
+        if (work.empty()) {
+            work.emplace_back(5);
+            auto &workers = work.back();
+            for (i = 0; i < min(int(notAdded.size()), int(workers.size())) && !canBeAdded.empty(); i++) {
+                workers[i] = make_pair(notAdded[canBeAdded[i]], 1);
+            }
+        } else {
+            auto &workers = work.back();
+            vector<int> freeWorkers;
+            for (i = 0; i < 5; i++) {
+                if (workers[i].first == 0 || charTime(workers[i].first) == workers[i].second) {
+                    if (workers[i].first != 0) {
+                        added.emplace_back(distance(canBeAdded.begin(), find(canBeAdded.begin(), canBeAdded.end(), workers[i].first)));
+                    }
+                    freeWorkers.emplace_back(i);
+                } else if (workers[i].first != 0)
+                    workers[i].second++;
+            }
+            work.emplace_back(workers);
+            for (auto &fw : freeWorkers) {
+                work.back()[fw].first = '\0';
+                work.back()[fw].second = 0;
+            }
+        }
+
+        for (auto &ai : added) {
+            i = ai;
+            order += notAdded[i];
+            auto toReplace = treeMap[notAdded[i]].childs;
+            auto it = find_if(toReplace.begin(), toReplace.end(), charAdded);
+            while (it != toReplace.end()) {
+                toReplace.erase(it);
+                it = find_if(toReplace.begin(), toReplace.end(), charAdded);
+            }
+            notAdded.replace(i, 1, toReplace);
+        }
+    }
+
+    cout << "Time to complete all steps: " << work.size() << endl;
 }
 
 int main(const int argc, char *argv[]) {
