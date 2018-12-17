@@ -367,37 +367,43 @@ void puzzle7(fstream &input) {
     const auto workTime = [](char ch) { return 61 + ch - 'A'; };
     notAdded = order;
     order.clear();
-    vector<pair<int, size_t>> workers(5, make_pair(-1, 0));
+    vector<pair<char, size_t>> workers(5, make_pair('.', 1));
     size_t time = 0;
     while (!notAdded.empty()) {
         sort(notAdded.begin(), notAdded.end());
-        deque<int> canBeAdded;
-        vector<char> added;
+        string canBeAdded, added;
         i = 0;
         while (i < notAdded.size()) {
             auto &parents = treeMap[notAdded[i]].parents;
-            if (count_if(parents.begin(), parents.end(), [&order](char ch) { return order.find(ch) != string::npos; }) == parents.size())
-                canBeAdded.emplace_back(i);
+            if (count_if(parents.begin(), parents.end(), [&order](char ch) { return order.find(ch) != string::npos; }) == parents.size()
+                && workers.end() == find_if(workers.begin(), workers.end(), [&](const pair<char, size_t> &w) { return w.first == notAdded[i]; }))
+                canBeAdded += notAdded[i];
             i++;
         }
 
         while (added.empty()) {
-            for (auto &it : workers) {
-                if (it.first >= 0) {
-                    if (workTime(notAdded[it.first]) == it.second) {
-                        added.emplace_back(notAdded[it.first]);
-                        it.first = -1;
-                        it.second = 0;
-                    } else
-                        it.second++;
+            time++;
+            vector<char> freeWorkers;
+            for (auto &w : workers) {
+                if (w.first != '.' && find(notAdded.begin(), notAdded.end(), w.first) != notAdded.end()) {
+                    w.second++;
+                    if (workTime(w.first) == w.second) {
+                        added += w.first;
+                        freeWorkers.emplace_back(w.first);
+                    }
                 }
-                if (it.second == 0 && !canBeAdded.empty()) {
-                    it.first = canBeAdded.front();
-                    it.second = 1;
-                    canBeAdded.pop_front();
+                if (w.first == '.' && !canBeAdded.empty()) {
+                    w.first = canBeAdded.front();
+                    canBeAdded = canBeAdded.substr(1);
                 }
             }
-            time++;
+            printf_s("%6llu:%c %c %c %c %c\n", time, workers[0].first, workers[1].first, workers[2].first, workers[3].first, workers[4].first);
+            for (auto &w : workers) {
+                if (find(freeWorkers.begin(), freeWorkers.end(), w.first) != freeWorkers.end()) {
+                    w.first = '.';
+                    w.second = 1;
+                }
+            }
         }
 
         for (auto &ch : added) {
