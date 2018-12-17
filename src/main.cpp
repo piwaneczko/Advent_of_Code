@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -363,59 +364,49 @@ void puzzle7(fstream &input) {
 
     cout << "Instructions order: " << order << endl;
 
-    const auto charTime = [](char ch) { return 61 + ch - 'A'; };
+    const auto workTime = [](char ch) { return 61 + ch - 'A'; };
     notAdded = order;
     order.clear();
-    vector<vector<pair<char, size_t>>> work;
+    vector<pair<int, size_t>> workers(5, make_pair(-1, 0));
+    size_t time = 0;
     while (!notAdded.empty()) {
         sort(notAdded.begin(), notAdded.end());
+        deque<int> canBeAdded;
+        vector<char> added;
         i = 0;
-        vector<int> canBeAdded, added;
         while (i < notAdded.size()) {
             auto &parents = treeMap[notAdded[i]].parents;
             if (count_if(parents.begin(), parents.end(), [&order](char ch) { return order.find(ch) != string::npos; }) == parents.size())
                 canBeAdded.emplace_back(i);
             i++;
         }
-        if (work.empty()) {
-            work.emplace_back(5);
-            auto &workers = work.back();
-            for (i = 0; i < min(int(notAdded.size()), int(workers.size())) && !canBeAdded.empty(); i++) {
-                workers[i] = make_pair(notAdded[canBeAdded[i]], 1);
+
+        while (added.empty()) {
+            for (auto &it : workers) {
+                if (it.first >= 0) {
+                    if (workTime(notAdded[it.first]) == it.second) {
+                        added.emplace_back(notAdded[it.first]);
+                        it.first = -1;
+                        it.second = 0;
+                    } else
+                        it.second++;
+                }
+                if (it.second == 0 && !canBeAdded.empty()) {
+                    it.first = canBeAdded.front();
+                    it.second = 1;
+                    canBeAdded.pop_front();
+                }
             }
-        } else {
-            auto &workers = work.back();
-            vector<int> freeWorkers;
-            for (i = 0; i < 5; i++) {
-                if (workers[i].first == 0 || charTime(workers[i].first) == workers[i].second) {
-                    if (workers[i].first != 0) {
-                        added.emplace_back(distance(canBeAdded.begin(), find(canBeAdded.begin(), canBeAdded.end(), workers[i].first)));
-                    }
-                    freeWorkers.emplace_back(i);
-                } else if (workers[i].first != 0)
-                    workers[i].second++;
-            }
-            work.emplace_back(workers);
-            for (auto &fw : freeWorkers) {
-                work.back()[fw].first = '\0';
-                work.back()[fw].second = 0;
-            }
+            time++;
         }
 
-        for (auto &ai : added) {
-            i = ai;
-            order += notAdded[i];
-            auto toReplace = treeMap[notAdded[i]].childs;
-            auto it = find_if(toReplace.begin(), toReplace.end(), charAdded);
-            while (it != toReplace.end()) {
-                toReplace.erase(it);
-                it = find_if(toReplace.begin(), toReplace.end(), charAdded);
-            }
-            notAdded.replace(i, 1, toReplace);
+        for (auto &ch : added) {
+            order += ch;
+            notAdded.replace(notAdded.find(ch), 1, "");
         }
     }
 
-    cout << "Time to complete all steps: " << work.size() << endl;
+    cout << "Time to complete all steps: " << time << endl;
 }
 
 int main(const int argc, char *argv[]) {
